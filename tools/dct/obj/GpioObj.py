@@ -16,18 +16,22 @@ import re
 import os
 import sys
 import string
-import ConfigParser
+import configparser
 import xml.dom.minidom
 
 
 from data.GpioData import GpioData
 from data.EintData import EintData
-from ModuleObj import ModuleObj
-import ChipObj
+from . ModuleObj import ModuleObj
+#from . ChipObj import ChipObj
 from utility.util import compare
 from utility.util import sorted_key
 from utility.util import log
 from utility.util import LogLevel
+
+def cmp(a, b):
+    return (a > b) - (a < b) 
+
 
 class GpioObj(ModuleObj):
     def __init__(self):
@@ -41,7 +45,7 @@ class GpioObj(ModuleObj):
         self.__gpio_column_enable = True
 
     def get_cfgInfo(self):
-        cp = ConfigParser.ConfigParser(allow_no_value=True)
+        cp = configparser.ConfigParser(allow_no_value=True)
         cp.read(ModuleObj.get_cmpPath())
 
         # get GPIO_FREQ section
@@ -71,7 +75,7 @@ class GpioObj(ModuleObj):
             GpioData._modeMap[op] = temp
 
             data = GpioData()
-            data.set_smtNum(string.atoi(list[len(list)-1]))
+            data.set_smtNum(int(list[len(list)-1]))
             ModuleObj.set_data(self, op.lower(), data)
 
         if cp.has_option('Chip Type', 'GPIO_COLUMN_ENABLE'):
@@ -84,7 +88,7 @@ class GpioObj(ModuleObj):
         for node in nodes:
             if node.nodeType == xml.dom.Node.ELEMENT_NODE:
                 if cmp(node.nodeName, 'count') == 0:
-                    GpioData._count = string.atoi(node.childNodes[0].nodeValue)
+                    GpioData._count = int(node.childNodes[0].nodeValue)
                     continue
 
                 eintNode = node.getElementsByTagName('eint_mode')
@@ -103,7 +107,7 @@ class GpioObj(ModuleObj):
                 iesNode = node.getElementsByTagName('ies')
                 drvCurNode = node.getElementsByTagName('drv_cur')
 
-                num = string.atoi(node.nodeName[4:])
+                num = int(node.nodeName[4:])
                 if num >= len(ModuleObj.get_data(self)):
                     break
                 data = ModuleObj.get_data(self)[node.nodeName]
@@ -115,7 +119,7 @@ class GpioObj(ModuleObj):
                     data.set_eintMode(flag)
 
                 if len(defmNode):
-                    data.set_defMode(string.atoi(defmNode[0].childNodes[0].nodeValue))
+                    data.set_defMode(int(defmNode[0].childNodes[0].nodeValue))
 
                 if len(modsNode) != 0  and len(modsNode[0].childNodes) != 0:
                     str = modsNode[0].childNodes[0].nodeValue
@@ -676,8 +680,8 @@ class GpioObj_MT6739(GpioObj_MT6759):
         GpioObj_MT6759.__init__(self)
 
     def get_eint_index(self, gpio_index):
-        if string.atoi(gpio_index) in GpioData._map_table.keys():
-            return GpioData._map_table[string.atoi(gpio_index)]
+        if int(gpio_index) in GpioData._map_table.keys():
+            return GpioData._map_table[int(gpio_index)]
         return -1
 
     def fill_pinctrl_hFile(self):
@@ -727,7 +731,7 @@ class GpioObj_MT6771(GpioObj_MT6739):
             if "GPIO_INIT_NO_COVER" in value.get_varNames():
                 continue
 
-            num = string.atoi(key[4:])
+            num = int(key[4:])
             defMode = value.get_defMode()
             dout = 1 if value.get_outHigh() else 0
             pullEn = 1 if value.get_inPullEn() else 0
@@ -749,7 +753,7 @@ class GpioObj_MT6763(GpioObj_MT6759):
         for key in sorted_key(ModuleObj.get_data(self).keys()):
             value = ModuleObj.get_data(self)[key]
 
-            num = string.atoi(key[4:])
+            num = int(key[4:])
             defMode = value.get_defMode()
             dout = 1 if value.get_outHigh() else 0
             pullEn = 1 if value.get_inPullEn() else 0
@@ -762,70 +766,3 @@ class GpioObj_MT6763(GpioObj_MT6759):
         gen_str += ';'
         gen_str += '''\n};\n'''
         return gen_str
-
-class GpioObj_MT6768(GpioObj_MT6771):
-    def fill_pinctrl_hFile(self):
-        gen_str = '''#include "pinctrl-paris.h"\n\n'''
-        gen_str += '''static const struct mtk_pin_desc mtk_pins_%s[] = {\n''' % (ModuleObj.get_chipId().lower())
-
-        # sorted_list = sorted(ModuleObj.get_data(self).keys(), key = compare)
-        for key in sorted_key(ModuleObj.get_data(self).keys()):
-            # for key in sorted_list:
-            gen_str += '''\tMTK_PIN(\n'''
-            gen_str += '''\t\t%s, \"%s\",\n''' % (key[4:], key.upper())
-            eint_index = self.get_eint_index(key[4:])
-            if eint_index != -1:
-                gen_str += '''\t\tMTK_EINT_FUNCTION(%d, %d),\n''' % (0, eint_index)
-            else:
-                gen_str += '''\t\tMTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT),\n'''
-            gen_str += '''\t\tDRV_GRP4'''
-            for i in range(0, GpioData._modNum):
-                mode_name = GpioData.get_modeName(key, i)
-
-                if mode_name != '':
-                    lst = []
-                    if mode_name.find('//') != -1:
-                        lst = mode_name.split('//')
-                    else:
-                        lst.append(mode_name)
-                    for j in range(0, len(lst)):
-                        gen_str += ''',\n\t\tMTK_FUNCTION(%d, "%s")''' % (i + j * 8, lst[j])
-            gen_str += '''\n\t),\n'''
-
-        gen_str += '''};\n'''
-
-        return gen_str
-
-class GpioObj_MT6785(GpioObj_MT6771):
-    # change feature from light for pin control
-    def fill_pinctrl_hFile(self):
-        gen_str = '''#include "pinctrl-paris.h"\n\n'''
-        gen_str += '''static const struct mtk_pin_desc mtk_pins_%s[] = {\n''' % (ModuleObj.get_chipId().lower())
-
-        # sorted_list = sorted(ModuleObj.get_data(self).keys(), key = compare)
-        for key in sorted_key(ModuleObj.get_data(self).keys()):
-            # for key in sorted_list:
-            gen_str += '''\tMTK_PIN(\n'''
-            gen_str += '''\t\t%s, \"%s\",\n''' % (key[4:], key.upper())
-            eint_index = self.get_eint_index(key[4:])
-            if eint_index != -1:
-                gen_str += '''\t\tMTK_EINT_FUNCTION(%d, %d),\n''' % (0, eint_index)
-            else:
-                gen_str += '''\t\tMTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT),\n'''
-            gen_str += '''\t\tDRV_GRP4'''
-            for i in range(0, GpioData._modNum):
-                mode_name = GpioData.get_modeName(key, i)
-                smt_number = ModuleObj.get_data(self)[key].get_smtNum()
-
-                if mode_name != '':
-                    if smt_number != -1:
-                        gen_str += ''',\n\t\tMTK_FUNCTION(%d, "%s")''' % (i, mode_name)
-                    else:
-                        gen_str += ''',\n\t\tMTK_FUNCTION(%d, NULL)''' % (i)
-
-            gen_str += '''\n\t),\n'''
-
-        gen_str += '''};\n'''
-
-        return gen_str
-

@@ -12,38 +12,35 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 
-import os, sys
+import os
 import collections
 import xml.dom.minidom
 
-from GpioObj import GpioObj
-from GpioObj import GpioObj_whitney
-from GpioObj import GpioObj_MT6759
-from GpioObj import GpioObj_MT6739
-from GpioObj import GpioObj_MT6771
-from GpioObj import GpioObj_MT6763
-from GpioObj import GpioObj_MT6768
-from GpioObj import GpioObj_MT6785
-from EintObj import EintObj
-from EintObj import EintObj_MT6750S
-from EintObj import EintObj_MT6739
-from AdcObj import AdcObj
-from AdcObj import AdcObj_MT6785
-from ClkObj import ClkObj
-from ClkObj import ClkObj_Everest
-from ClkObj import ClkObj_Olympus
-from ClkObj import ClkObj_Rushmore
-from ClkObj import ClkObj_MT6779
-from I2cObj import I2cObj
-from I2cObj import I2cObj_MT6759
-from I2cObj import I2cObj_MT6775
-from PmicObj import PmicObj
-from PmicObj import PmicObj_MT6758
-from Md1EintObj import Md1EintObj
-from Md1EintObj import Md1EintObj_MT6739
-from PowerObj import PowerObj
-from KpdObj import KpdObj
-from ModuleObj import ModuleObj
+from . GpioObj import GpioObj
+from . GpioObj import GpioObj_whitney
+from . GpioObj import GpioObj_MT6759
+from . GpioObj import GpioObj_MT6739
+from . GpioObj import GpioObj_MT6771
+from . GpioObj import GpioObj_MT6763
+from . EintObj import EintObj
+from . EintObj import EintObj_MT6750S
+from . EintObj import EintObj_MT6739
+from . AdcObj import AdcObj
+from . ClkObj import ClkObj
+from . ClkObj import ClkObj_Everest
+from . ClkObj import ClkObj_Olympus
+from . ClkObj import ClkObj_Rushmore
+from . ClkObj import ClkObj_MT6779
+from . I2cObj import I2cObj
+from . I2cObj import I2cObj_MT6759
+from . I2cObj import I2cObj_MT6775
+from . PmicObj import PmicObj
+from . PmicObj import PmicObj_MT6758
+from . Md1EintObj import Md1EintObj
+from . Md1EintObj import Md1EintObj_MT6739
+from . PowerObj import PowerObj
+from . KpdObj import KpdObj
+from . ModuleObj import ModuleObj
 
 from utility.util import log
 from utility.util import LogLevel
@@ -58,6 +55,10 @@ para_map = {'adc':['adc_h', 'adc_dtsi'],\
             'kpd':['kpd_h', 'kpd_dtsi'],\
             'pmic':['pmic_drv_h', 'pmic_drv_c', 'pmic_h', 'pmic_c', 'pmic_dtsi'],\
             'power':['power_h']}
+
+def cmp(a, b):
+    return (a > b) - (a < b) 
+
 
 class ChipObj:
     def __init__(self, path, dest):
@@ -231,7 +232,7 @@ class ChipObj:
         log(LogLevel.info, 'Generate cust_dtsi file successfully!')
 
 
-class MT6797(ChipObj):
+class Everest(ChipObj):
     def __init__(self, dws_path, gen_path):
         ChipObj.__init__(self, dws_path, gen_path)
         self.init_objs()
@@ -247,7 +248,7 @@ class MT6797(ChipObj):
         return ChipObj.generate(self, paras)
 
 
-class MT6757(ChipObj):
+class Olympus(ChipObj):
     def __init__(self, dws_path, gen_path):
         ChipObj.__init__(self, dws_path, gen_path)
 
@@ -280,7 +281,7 @@ class MT6757_P25(ChipObj):
         return ChipObj.generate(self, paras)
 
 
-class MT6570(ChipObj):
+class Rushmore(ChipObj):
     def __init__(self, dws_path, gen_path):
         ChipObj.__init__(self, dws_path, gen_path)
 
@@ -295,7 +296,7 @@ class MT6570(ChipObj):
     def generate(self, paras):
         return ChipObj.generate(self, paras)
 
-class MT6799(ChipObj):
+class Whitney(ChipObj):
     def __init__(self, dws_path, gen_path):
         ChipObj.__init__(self, dws_path, gen_path)
 
@@ -306,7 +307,7 @@ class MT6799(ChipObj):
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):
-        log(LogLevel.info, 'MT6799 parse')
+        log(LogLevel.info, 'Whitney parse')
         return ChipObj.parse(self)
 
     def generate(self, paras):
@@ -454,31 +455,4 @@ class MT6779(ChipObj):
         ChipObj.replace_obj(self, "i2c", I2cObj_MT6775())
         ChipObj.refresh_eintGpioMap(self)
 
-class MT6785(ChipObj):
-    def __init__(self, dws_path, gen_path):
-        ChipObj.__init__(self, dws_path, gen_path)
 
-    def init_objs(self):
-        ChipObj.init_objs(self)
-        ChipObj.replace_obj(self, 'adc', AdcObj_MT6785())
-        ChipObj.replace_obj(self, 'clk', ClkObj_MT6779())
-        ChipObj.replace_obj(self, 'pmic', PmicObj_MT6758())
-        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6785())
-        ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
-        ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6739())
-        ChipObj.replace_obj(self, "i2c", I2cObj_MT6775())
-        ChipObj.refresh_eintGpioMap(self)
-
-
-class MT6768(ChipObj):
-    def __init__(self, dws_path, gen_path):
-        ChipObj.__init__(self, dws_path, gen_path)
-
-    def init_objs(self):
-        ChipObj.init_objs(self)
-        ChipObj.replace_obj(self, 'pmic', PmicObj_MT6758())
-        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6768())
-        ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
-        ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6739())
-        ChipObj.replace_obj(self, "i2c", I2cObj_MT6775())
-        ChipObj.refresh_eintGpioMap(self)
