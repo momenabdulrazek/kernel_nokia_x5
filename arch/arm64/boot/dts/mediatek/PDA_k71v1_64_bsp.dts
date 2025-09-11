@@ -726,7 +726,7 @@
 };
 /* FINGERPRINT end */
 
-#include <PDA/cust.dtsi>
+#include "PDA/cust.dtsi"
 #include "cust_mt6771_camera.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
