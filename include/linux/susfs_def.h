@@ -74,6 +74,20 @@
 #define ND_STATE_LAST_SDCARD_SUS_PATH 128
 #define ND_FLAGS_LOOKUP_LAST		0x2000000
 
+/*
+ * inode->i_state => storing flag 'INODE_STATE_'
+ * mount->mnt.susfs_mnt_id_backup => storing original mnt_id of normal mounts or custom sus mnt_id of sus mounts
+ * task_struct->susfs_last_fake_mnt_id => storing last valid fake mnt_id (will be deprecated or exclusive for non-gki only)
+ * task_struct->susfs_task_state => storing flag 'TASK_STRUCT_'
+ */
+
+#define INODE_STATE_SUS_PATH BIT(24)
+#define INODE_STATE_SUS_MOUNT BIT(25)
+#define INODE_STATE_SUS_KSTAT BIT(26)
+#define INODE_STATE_OPEN_REDIRECT BIT(27)
+
+#define TASK_STRUCT_NON_ROOT_USER_APP_PROC BIT(24)
+
 #define MAGIC_MOUNT_WORKDIR "/debug_ramdisk/workdir"
 #define DATA_ADB_UMOUNT_FOR_ZYGOTE_SYSTEM_PROCESS "/data/adb/susfs_umount_for_zygote_system_process"
 #define DATA_ADB_UMOUNT_FOR_ZYGOTE_ISO_SERVICE "/data/adb/susfs_umount_for_zygote_iso_service"
